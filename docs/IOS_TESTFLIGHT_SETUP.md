@@ -1,120 +1,90 @@
-# iOS TestFlight Setup Guide
+# iOS TestFlight Setup Guide (Simplified)
 
 ## Overview
-This GitHub Actions workflow automatically builds and deploys the Vigil iOS app to TestFlight.
+Deploy Vigil iOS app to TestFlight using GitHub Actions and App Store Connect API.
 
-## Required GitHub Secrets
+## Required Secrets (Only 4!)
 
 You need to add these secrets to your GitHub repository:
 
-### 1. Code Signing Secrets
+| Secret | How to Get It |
+|--------|---------------|
+| `APPLE_ISSUER_ID` | App Store Connect → Users & Access → Keys → Issuer ID |
+| `APPLE_KEY_ID` | Same page as above - the Key ID |
+| `APPLE_API_KEY` | Download the .p8 file when creating the key, paste contents |
+| `APPLE_TEAM_ID` | Apple Developer → Membership - Team ID (e.g., SVP6SYH94B) |
 
-**APPLE_CERTIFICATE_P12**
-- Your Apple Distribution certificate (.p12 file) base64 encoded
-- Used to sign the iOS app
-
-**APPLE_CERTIFICATE_PASSWORD**
-- Password for the .p12 certificate file
-
-**APPLE_PROVISIONING_PROFILE**
-- Your App Store provisioning profile (.mobileprovision) base64 encoded
-- Must match the App ID: `com.zenidolabs.vigil`
-
-### 2. App Store Connect API Secrets
-
-**APPLE_ISSUER_ID**
-- Issuer ID from App Store Connect → Users and Access → Keys
-- Looks like: `12345678-1234-1234-1234-123456789012`
-
-**APPLE_KEY_ID**
-- Key ID from your App Store Connect API key
-- Looks like: `ABC123DEF4`
-
-**APPLE_API_KEY**
-- The actual private key (.p8 file) content
-- Download from App Store Connect when creating the API key
-
-## How to Generate Secrets
+## How to Get These Values
 
 ### Step 1: Create App Store Connect API Key
 1. Go to https://appstoreconnect.apple.com
 2. Users and Access → Keys
 3. Click "+" to add new key
 4. Name: "GitHub Actions CI"
-5. Access: App Manager (or Admin)
-6. Download the .p8 file (can only download once!)
-7. Note the Issuer ID and Key ID
+5. Access: App Manager
+6. Download the .p8 file (**can only download once!**)
+7. Note the **Issuer ID** and **Key ID**
 
-### Step 2: Create Signing Certificate
-1. Go to https://developer.apple.com
-2. Certificates, Identifiers & Profiles
-3. Create "Apple Distribution" certificate
-4. Download and export as .p12 with password
+### Step 2: Get Team ID
+1. Go to https://developer.apple.com/account
+2. Look for "Team ID" on the membership page
+3. Format: 10 characters like `SVP6SYH94B`
 
-### Step 3: Create Provisioning Profile
-1. Certificates, Identifiers & Profiles → Profiles
-2. Create "App Store" profile
-3. Select App ID: `com.zenidolabs.vigil`
-4. Select your distribution certificate
-5. Download the .mobileprovision file
-
-### Step 4: Encode Files for GitHub Secrets
-
-```bash
-# Encode certificate
-base64 -i certificate.p12 | pbcopy
-# Paste into APPLE_CERTIFICATE_P12 secret
-
-# Encode provisioning profile  
-base64 -i profile.mobileprovision | pbcopy
-# Paste into APPLE_PROVISIONING_PROFILE secret
-
-# API key is just the text content of the .p8 file
-# Paste into APPLE_API_KEY secret
-```
-
-## Adding Secrets to GitHub
-
-1. Go to your GitHub repo → Settings → Secrets and variables → Actions
+### Step 3: Add Secrets to GitHub
+1. Go to: https://github.com/atlasburrows/AtlasControlPanel/settings/secrets/actions
 2. Click "New repository secret"
-3. Add each secret from above
+3. Add each of the 4 secrets
+
+## Alternative: Manual Certificate Management
+
+If you prefer manual certificates, you need:
+- `APPLE_CERTIFICATE_P12` - Distribution certificate
+- `APPLE_CERTIFICATE_PASSWORD` - Certificate password
+- `APPLE_PROVISIONING_PROFILE` - App Store provisioning profile
+
+These require manual creation at developer.apple.com
 
 ## Running the Workflow
 
-### Manual Trigger
-1. Go to Actions → Build & Deploy iOS to TestFlight
+### Automatic
+Any push to `master` triggers a debug build.
+
+### Manual TestFlight Deploy
+1. Go to Actions → "Build & Deploy iOS to TestFlight"
 2. Click "Run workflow"
 3. Select branch (master)
-4. Choose whether to deploy to TestFlight
+4. Choose "Deploy to TestFlight: true"
 5. Click "Run workflow"
 
-### Automatic Trigger
-- Any push to `master` branch that changes MAUI code will trigger a build
-- Debug build runs automatically
-- For TestFlight deployment, use manual trigger
+## What Happens
 
-## TestFlight Testing
-
-Once uploaded:
-1. Go to https://appstoreconnect.apple.com → My Apps → Vigil → TestFlight
-2. You'll see the build under "Internal Testing"
-3. Add yourself as an internal tester
-4. Download TestFlight app on your iOS device
-5. Accept the invitation and install Vigil
+The GitHub Action will:
+1. Build the iOS app on macOS runner
+2. Use App Store Connect API for code signing
+3. Upload to TestFlight automatically
+4. You'll get an email when it's ready to test
 
 ## Troubleshooting
 
 **Build fails with signing error**
-- Check certificate and provisioning profile match
-- Verify App ID in Info.plist matches provisioning profile
-- Ensure certificate is not expired
+- Check APPLE_TEAM_ID matches your Developer account
+- Verify API key has "App Manager" access
+- Ensure app identifier `com.zenidolabs.vigil` is registered
 
-**Upload fails to TestFlight**
-- Verify App Store Connect API key has App Manager access
-- Check that bundle identifier matches what's in App Store Connect
-- Ensure you've completed App Store privacy questionnaire
+**Upload fails**
+- Check App Store Connect API key hasn't expired
+- Verify bundle identifier in Info.plist matches App Store Connect
+- Check app passes basic validation
 
-**Build succeeds but not in TestFlight**
-- Check email for processing errors from Apple
-- Verify app passes automated validation
-- Check for missing icons, permissions, or privacy manifest
+**Not in TestFlight**
+- Wait 10-30 minutes for Apple processing
+- Check email for any issues from Apple
+- Verify you're added as an internal tester in App Store Connect
+
+## Next Steps
+
+1. Add the 4 secrets to GitHub
+2. Run the workflow manually
+3. Wait for TestFlight email
+4. Download TestFlight app on your iPhone
+5. Accept invitation and install Vigil!
