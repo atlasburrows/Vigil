@@ -94,4 +94,18 @@ public class CredentialRepository(IDbConnectionFactory connectionFactory, ICrede
         return await connection.QuerySingleOrDefaultAsync<string?>(
             "SELECT VaultMode FROM SecureCredentials WHERE Id = @Id", new { Id = id });
     }
+
+    public async Task<IEnumerable<CredentialGroup>> GetAllGroupsAsync()
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QueryAsync<CredentialGroup>(
+            "SELECT Id, Name, Category, Description, Icon, CreatedAt, UpdatedAt FROM CredentialGroups ORDER BY Name");
+    }
+
+    public async Task<IEnumerable<CredentialGroupMembership>> GetAllGroupMembershipsAsync()
+    {
+        using var connection = connectionFactory.CreateConnection();
+        return await connection.QueryAsync<CredentialGroupMembership>(
+            "SELECT GroupId, CredentialId FROM CredentialGroupMembers");
+    }
 }

@@ -13,4 +13,6 @@ public interface ICredentialRepository
     Task<string?> GetDecryptedStorageKeyAsync(Guid id);
     Task UpdateVaultModeAsync(Guid id, string vaultMode);
     Task<string?> GetVaultModeAsync(Guid id);
+    Task<IEnumerable<CredentialGroup>> GetAllGroupsAsync();
+    Task<IEnumerable<CredentialGroupMembership>> GetAllGroupMembershipsAsync();
 }
