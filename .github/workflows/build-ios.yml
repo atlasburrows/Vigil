@@ -78,8 +78,12 @@ jobs:
 
       - name: Install .NET workloads
         run: |
-          dotnet workload install maui-ios maui-android
-          dotnet workload restore
+          echo "Installing .NET MAUI workloads..."
+          dotnet workload update
+          dotnet workload install maui-ios --skip-manifest-update
+          dotnet workload restore src/Atlas.MAUI/Atlas.MAUI.csproj
+          echo "Verifying installed workloads..."
+          dotnet workload list
 
       - name: Restore dependencies
         run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:AndroidOnly=false
