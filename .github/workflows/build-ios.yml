@@ -8,6 +8,7 @@ on:
       - 'src/Atlas.Shared/**'
       - 'src/Atlas.Domain/**'
       - 'src/Atlas.Application/**'
+      - '.github/workflows/build-ios.yml'
   workflow_dispatch:
     inputs:
       deploy_to_testflight:
