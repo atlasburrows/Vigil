@@ -65,4 +65,13 @@ public class CredentialGroupRepository(IDbConnectionFactory connectionFactory) :
             cred.StorageKey = "********";
         return credentials;
     }
+
+    public async Task<IEnumerable<SecureCredential>> GetCredentialsInGroupByNameAsync(string groupName)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var credentials = await connection.QueryAsync<SecureCredential>("sp_Credentials_GetByGroupName", new { GroupName = groupName }, commandType: CommandType.StoredProcedure);
+        foreach (var cred in credentials)
+            cred.StorageKey = "********";
+        return credentials;
+    }
 }

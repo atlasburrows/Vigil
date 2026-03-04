@@ -101,6 +101,31 @@ public class SqliteCredentialGroupRepository(IDbConnectionFactory connectionFact
         });
     }
 
+    public async Task<IEnumerable<SecureCredential>> GetCredentialsInGroupByNameAsync(string groupName)
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<SqliteCredentialRow>(
+            @"SELECT c.* FROM SecureCredentials c
+              INNER JOIN CredentialGroupMembers m ON c.Id = m.CredentialId
+              INNER JOIN CredentialGroups g ON m.GroupId = g.Id
+              WHERE g.Name = @GroupName",
+            new { GroupName = groupName });
+
+        return rows.Select(r => new SecureCredential
+        {
+            Id = Guid.Parse(r.Id),
+            Name = r.Name ?? "",
+            Category = r.Category ?? "",
+            Username = r.Username,
+            Description = r.Description,
+            StorageKey = "********",
+            CreatedAt = DateTime.Parse(r.CreatedAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            UpdatedAt = DateTime.Parse(r.UpdatedAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            AccessCount = r.AccessCount,
+            VaultMode = r.VaultMode ?? "locked"
+        });
+    }
+
     private static CredentialGroup MapRow(CredentialGroupRow r) => new()
     {
         Id = Guid.Parse(r.Id),

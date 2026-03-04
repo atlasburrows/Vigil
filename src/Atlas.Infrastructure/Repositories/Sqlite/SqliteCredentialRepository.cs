@@ -112,6 +112,33 @@ public class SqliteCredentialRepository(IDbConnectionFactory connectionFactory, 
             new { Id = id.ToString() });
     }
 
+    public async Task<IEnumerable<CredentialGroup>> GetAllGroupsAsync()
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<dynamic>("SELECT * FROM CredentialGroups ORDER BY Name");
+        return rows.Select(r => new CredentialGroup
+        {
+            Id = Guid.Parse((string)r.Id),
+            Name = (string)r.Name,
+            Category = (string?)r.Category,
+            Description = (string?)r.Description,
+            Icon = (string?)r.Icon,
+            CreatedAt = DateTime.Parse((string)r.CreatedAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            UpdatedAt = DateTime.Parse((string)r.UpdatedAt, null, System.Globalization.DateTimeStyles.RoundtripKind)
+        });
+    }
+
+    public async Task<IEnumerable<CredentialGroupMembership>> GetAllGroupMembershipsAsync()
+    {
+        using var connection = connectionFactory.CreateConnection();
+        var rows = await connection.QueryAsync<dynamic>("SELECT * FROM CredentialGroupMembers");
+        return rows.Select(r => new CredentialGroupMembership
+        {
+            GroupId = Guid.Parse((string)r.GroupId),
+            CredentialId = Guid.Parse((string)r.CredentialId)
+        });
+    }
+
     private static SecureCredential MapRow(SecureCredentialRow r, bool maskStorageKey = false) => new()
     {
         Id = Guid.Parse(r.Id),

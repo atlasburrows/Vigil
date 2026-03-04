@@ -12,4 +12,9 @@ public interface ICredentialGroupRepository
     Task AddCredentialToGroupAsync(Guid groupId, Guid credentialId);
     Task RemoveCredentialFromGroupAsync(Guid groupId, Guid credentialId);
     Task<IEnumerable<SecureCredential>> GetCredentialsInGroupAsync(Guid groupId);
+    
+    /// <summary>
+    /// Get all credentials in a group by the group's name (for group credential requests).
+    /// </summary>
+    Task<IEnumerable<SecureCredential>> GetCredentialsInGroupByNameAsync(string groupName);
 }

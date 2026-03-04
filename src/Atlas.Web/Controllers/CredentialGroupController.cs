@@ -9,6 +9,7 @@ namespace Atlas.Web.Controllers;
 [Route("api/security/credential-groups")]
 public class CredentialGroupController(
     ICredentialGroupRepository groupRepository,
+    ICredentialRepository credentialRepository,
     ISecurityRepository securityRepository) : ControllerBase
 {
     [HttpGet]
@@ -116,7 +117,76 @@ public class CredentialGroupController(
 
         return Created($"api/security/permissions/{created.Id}", created);
     }
+
+    /// <summary>
+    /// Retrieve all decrypted credentials from an approved group request.
+    /// Requires the permission request ID from the group access request.
+    /// </summary>
+    [HttpPost("decrypt-approved-group")]
+    public async Task<ActionResult<GroupDecryptionResult>> GetDecryptedGroupCredentials([FromBody] DecryptGroupRequestDto dto)
+    {
+        // Verify the permission request exists, is approved, and hasn't expired
+        var permissions = await securityRepository.GetAllPermissionRequestsAsync();
+        var approval = permissions.FirstOrDefault(p =>
+            p.Id == dto.PermissionRequestId &&
+            p.Status == PermissionStatus.Approved &&
+            (p.ExpiresAt == null || p.ExpiresAt > DateTime.UtcNow));
+
+        if (approval is null)
+            return Unauthorized(new { error = "No valid approved permission request found. Request group access and wait for owner approval." });
+
+        // Extract group name from Category (format: "CredentialGroup:{groupName}")
+        string? groupName = null;
+        if (!string.IsNullOrEmpty(approval.Category) && approval.Category.StartsWith("CredentialGroup:"))
+        {
+            groupName = approval.Category.Substring("CredentialGroup:".Length);
+        }
+
+        if (string.IsNullOrEmpty(groupName))
+            return BadRequest(new { error = "This request is not a group credential request." });
+
+        // Get all credentials in the group by name
+        var credentials = await groupRepository.GetCredentialsInGroupByNameAsync(groupName);
+        var credList = credentials.ToList();
+
+        if (credList.Count == 0)
+            return NotFound(new { error = $"Group '{groupName}' has no credentials or was not found." });
+
+        // Decrypt all credentials
+        var decryptedCreds = new List<DecryptedCredentialDto>();
+        foreach (var cred in credList)
+        {
+            var decryptedValue = await credentialRepository.GetDecryptedStorageKeyAsync(cred.Id);
+            if (decryptedValue != null)
+            {
+                decryptedCreds.Add(new DecryptedCredentialDto(
+                    cred.Id,
+                    cred.Name,
+                    cred.Category,
+                    cred.Username,
+                    decryptedValue
+                ));
+            }
+        }
+
+        // Log the group access
+        await securityRepository.CreateAuditAsync(new SecurityAudit
+        {
+            Action = "CredentialGroupDecrypted",
+            Details = $"Group '{groupName}' ({decryptedCreds.Count} credentials) decrypted via approved request {dto.PermissionRequestId}",
+            Severity = Severity.Warning
+        });
+
+        return Ok(new GroupDecryptionResult(
+            GroupName: groupName,
+            Credentials: decryptedCreds,
+            RetrievedAt: DateTime.UtcNow
+        ));
+    }
 }
 
 public record CreateCredentialGroupDto(string Name, string? Category = null, string? Description = null, string? Icon = null);
 public record GroupAccessRequestDto(string Reason, int? DurationMinutes = 30);
+public record DecryptGroupRequestDto(Guid PermissionRequestId);
+public record DecryptedCredentialDto(Guid Id, string Name, string Category, string? Username, string Value);
+public record GroupDecryptionResult(string GroupName, List<DecryptedCredentialDto> Credentials, DateTime RetrievedAt);
