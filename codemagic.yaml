@@ -8,16 +8,25 @@ workflows:
         DOTNET_VERSION: "10.0.x"
         DOTNET_PATH: "$CM_BUILD_DIR/dotnet"
         DOTNET: "$CM_BUILD_DIR/dotnet/dotnet"
-      xcode: latest
+        # iOS Build settings
+        IOS_ONLY: "true"
+        BUILD_CONFIGURATION: "Release"
+      xcode: 16.2
+      ios_signing:
+        # Enable automatic code signing
+        # Configure these in Codemagic UI under Team > iOS Certificates
+        distribution_type: app_store
+        bundle_identifier: com.zenidolabs.vigil
     scripts:
       - name: Install .NET SDK
         script: |
           echo "Installing .NET SDK..."
-          wget https://dot.net/v1/dotnet-install.sh
+          wget -q https://dot.net/v1/dotnet-install.sh
           chmod +x dotnet-install.sh
           ./dotnet-install.sh --channel 10.0 --install-dir $DOTNET_PATH
           export PATH="$DOTNET_PATH:$PATH"
           dotnet --version
+          echo "DOTNET_PATH=$DOTNET_PATH" >> $CM_ENV
       
       - name: Install MAUI workload
         script: |
@@ -31,20 +40,101 @@ workflows:
           export PATH="$DOTNET_PATH:$PATH"
           dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
       
-      - name: Build iOS
+      - name: Build iOS (Simulator - Debug)
         script: |
           export PATH="$DOTNET_PATH:$PATH"
-          echo "Building iOS..."
+          echo "Building iOS for Simulator (Debug)..."
           dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
             -f net10.0-ios \
             -c Debug \
             /p:BuildIpa=false \
+            /p:RuntimeIdentifier=iossimulator-arm64 \
             --verbosity normal
       
-      - name: Upload build artifacts
+      - name: Build iOS (Device - Release)
         script: |
-          echo "Build completed!"
-          ls -la src/Atlas.MAUI/bin/Debug/net10.0-ios/
+          export PATH="$DOTNET_PATH:$PATH"
+          echo "Building iOS for Device (Release with code signing)..."
+          dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
+            -f net10.0-ios \
+            -c Release \
+            /p:BuildIpa=true \
+            /p:IpaPackagePath="$CM_BUILD_DIR/Vigil.ipa" \
+            /p:CodesignKey="$CM_CERTIFICATE_COMMON_NAME" \
+            /p:CodesignProvision="$CM_PROVISIONING_PROFILE_NAME" \
+            --verbosity normal
+      
+      - name: Verify IPA
+        script: |
+          echo "Checking for IPA file..."
+          ls -la "$CM_BUILD_DIR/"*.ipa || echo "IPA not found at expected location"
+          ls -la src/Atlas.MAUI/bin/Release/net10.0-ios/ || true
     artifacts:
-      - src/Atlas.MAUI/bin/Debug/net10.0-ios/*.app
-      - src/Atlas.MAUI/bin/Debug/net10.0-ios/*.dll
+      - src/Atlas.MAUI/bin/Release/net10.0-ios/*.ipa
+      - src/Atlas.MAUI/bin/Debug/net10.0-ios/**/*.app
+      - $CM_BUILD_DIR/*.ipa
+    publishing:
+      # Uncomment and configure when ready for TestFlight
+      # app_store_connect:
+      #   api_key: $APP_STORE_CONNECT_KEY_ID
+      #   key_id: $APP_STORE_CONNECT_KEY_ID
+      #   issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+      #   submit_to_testflight: true
+      #   beta_groups:
+      #     - Beta Testers
+      email:
+        recipients:
+          - mikal@zenidolabs.com
+        notify:
+          success: true
+          failure: true
+
+  # Workflow for simulator-only builds (faster, no code signing required)
+  maui-ios-simulator:
+    name: .NET MAUI iOS Simulator Build
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      vars:
+        DOTNET_VERSION: "10.0.x"
+        DOTNET_PATH: "$CM_BUILD_DIR/dotnet"
+        DOTNET: "$CM_BUILD_DIR/dotnet/dotnet"
+      xcode: 16.2
+    scripts:
+      - name: Install .NET SDK
+        script: |
+          echo "Installing .NET SDK..."
+          wget -q https://dot.net/v1/dotnet-install.sh
+          chmod +x dotnet-install.sh
+          ./dotnet-install.sh --channel 10.0 --install-dir $DOTNET_PATH
+          export PATH="$DOTNET_PATH:$PATH"
+          echo "DOTNET_PATH=$DOTNET_PATH" >> $CM_ENV
+      
+      - name: Install MAUI workload
+        script: |
+          export PATH="$DOTNET_PATH:$PATH"
+          dotnet workload install maui-ios --source https://api.nuget.org/v3/index.json
+      
+      - name: Restore dependencies
+        script: |
+          export PATH="$DOTNET_PATH:$PATH"
+          dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
+      
+      - name: Build iOS Simulator
+        script: |
+          export PATH="$DOTNET_PATH:$PATH"
+          dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
+            -f net10.0-ios \
+            -c Debug \
+            /p:BuildIpa=false \
+            /p:RuntimeIdentifier=iossimulator-arm64 \
+            --verbosity normal
+    artifacts:
+      - src/Atlas.MAUI/bin/Debug/net10.0-ios/**/*.app
+    publishing:
+      email:
+        recipients:
+          - mikal@zenidolabs.com
+        notify:
+          success: true
+          failure: true
