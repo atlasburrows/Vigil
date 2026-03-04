@@ -25,12 +25,11 @@ jobs:
     runs-on: macos-15
     outputs:
       certificate_created: ${{ steps.create_cert.outputs.created }}
-    
+
     steps:
       - name: Install dependencies
         run: |
           brew install jq
-          # Note: iOS workload not needed for certificate creation
 
       - name: Create Certificate Signing Request
         id: create_csr
@@ -53,14 +52,6 @@ jobs:
             echo "created=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
-          # Create JWT for App Store Connect API
-          JWT_HEADER=$(echo -n '{"alg":"ES256","kid":"'"$APPLE_KEY_ID"'","typ":"JWT"}' | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
-          JWT_CLAIMS=$(echo -n '{"iss":"'"$APPLE_ISSUER_ID"'","iat":'$(date +%s)',"exp":'$(($(date +%s) + 1200))',"aud":"appstoreconnect-v1"}' | base64 | tr -d '=' | tr '/+' '_-' | tr -d '\n')
-          
-          # Note: Full JWT signing requires the private key - this is a simplified example
-          # In practice, you'd use a tool like fastlane or a proper JWT library
-          
           echo "Certificate creation requires App Store Connect API with proper JWT signing."
           echo "For now, certificates must be created manually or use fastlane match."
           echo "created=false" >> $GITHUB_OUTPUT
@@ -68,7 +59,7 @@ jobs:
   build-ios-debug:
     runs-on: macos-15
     needs: setup-certificates
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -88,33 +79,21 @@ jobs:
 
       - name: Install .NET workloads
         run: |
-          echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
-          cat > rollback.json << 'EOF'
-          {
-            "microsoft.net.sdk.ios": "18.0.9617/9.0.100",
-            "microsoft.net.sdk.maui": "9.0.0/9.0.100"
-          }
-          EOF
-          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
+          echo "Installing .NET MAUI workloads..."
+          dotnet workload install maui --source https://api.nuget.org/v3/index.json
           echo "Verifying installed workloads..."
           dotnet workload list
-          echo "Checking iOS SDK version..."
-          ls -la ~/.dotnet/packs/Microsoft.iOS.Sdk*/
-
-      - name: Restore workloads
-        run: dotnet workload restore src/Atlas.MAUI/Atlas.MAUI.csproj
 
       - name: Restore dependencies
-        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:CIBuildTarget=net9.0-ios
+        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
 
       - name: Build iOS (Compile Only)
         run: |
           echo "=== Starting iOS Compile Check ==="
           dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
-            -f net9.0-ios \
+            -f net10.0-ios \
             -c Debug \
             -r iossimulator-arm64 \
-            /p:CIBuildTarget=net9.0-ios \
             /p:BuildIpa=false \
             /p:RunAOTCompilation=false \
             --verbosity normal
@@ -142,7 +121,7 @@ jobs:
     runs-on: macos-15
     needs: [setup-certificates, build-ios-debug]
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master'
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -151,22 +130,21 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Select Xcode Version
+        run: |
+          echo "Selecting Xcode 16.2..."
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          xcode-select -p
+          xcrun xcodebuild -version
+
       - name: Install .NET workloads
         run: |
-          echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
-          cat > rollback.json << 'EOF'
-          {
-            "microsoft.net.sdk.ios": "18.0.9617/9.0.100",
-            "microsoft.net.sdk.maui": "9.0.0/9.0.100"
-          }
-          EOF
-          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
-
-      - name: Restore workloads
-        run: dotnet workload restore src/Atlas.MAUI/Atlas.MAUI.csproj
+          echo "Installing .NET MAUI workloads..."
+          dotnet workload install maui --source https://api.nuget.org/v3/index.json
+          dotnet workload list
 
       - name: Restore dependencies
-        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:CIBuildTarget=net9.0-ios
+        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
 
       - name: Setup Code Signing with Apple API
         env:
@@ -179,22 +157,18 @@ jobs:
             echo "⚠️  Apple API credentials not set. Skipping code signing."
             echo "To enable TestFlight deployment, add these secrets:"
             echo "  - APPLE_ISSUER_ID"
-            echo "  - APPLE_KEY_ID"  
+            echo "  - APPLE_KEY_ID"
             echo "  - APPLE_API_KEY"
             echo "  - APPLE_TEAM_ID"
             exit 0
           fi
-          
-          # Install fastlane for automated certificate management
+
           gem install fastlane
-          
-          # Create temporary keychain
+
           security create-keychain -p "" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain
-          
-          # Use fastlane match or API to get certificates
-          # This requires setup - see FASTLANE_SETUP.md
+
           echo "✅ Apple API credentials configured"
 
       - name: Update Info.plist for Build Number
@@ -214,11 +188,10 @@ jobs:
             echo "Add Apple API credentials to enable device builds"
             exit 0
           fi
-          
+
           dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
-            -f net9.0-ios \
+            -f net10.0-ios \
             -c Release \
-            /p:CIBuildTarget=net9.0-ios \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="iPhone Distribution" \
             /p:CodesignProvision="Vigil App Store"
@@ -228,7 +201,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-build-log
-          path: src/Atlas.MAUI/bin/Release/net9.0-ios/
+          path: src/Atlas.MAUI/bin/Release/net10.0-ios/
           retention-days: 7
 
       - name: Summary
@@ -238,7 +211,7 @@ jobs:
           echo "✅ Debug build completed (simulator)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "To enable TestFlight deployment, add these repository secrets:" >> $GITHUB_STEP_SUMMARY
-          echo "- \\`APPLE_ISSUER_ID\\` - From App Store Connect → Users & Access → Keys" >> $GITHUB_STEP_SUMMARY
-          echo "- \\`APPLE_KEY_ID\\` - Your API Key ID" >> $GITHUB_STEP_SUMMARY
-          echo "- \\`APPLE_API_KEY\\` - Content of the .p8 private key file" >> $GITHUB_STEP_SUMMARY
-          echo "- \\`APPLE_TEAM_ID\\` - Your Apple Developer Team ID" >> $GITHUB_STEP_SUMMARY
+          echo "- \`APPLE_ISSUER_ID\` - From App Store Connect → Users & Access → Keys" >> $GITHUB_STEP_SUMMARY
+          echo "- \`APPLE_KEY_ID\` - Your API Key ID" >> $GITHUB_STEP_SUMMARY
+          echo "- \`APPLE_API_KEY\` - Content of the .p8 private key file" >> $GITHUB_STEP_SUMMARY
+          echo "- \`APPLE_TEAM_ID\` - Your Apple Developer Team ID" >> $GITHUB_STEP_SUMMARY

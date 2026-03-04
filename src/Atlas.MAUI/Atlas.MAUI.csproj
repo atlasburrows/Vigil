@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <!-- CIBuildTarget: Override target framework for CI builds (e.g., net9.0-ios for Xcode 16.2 compatibility) -->
-        <TargetFrameworks Condition="'$(CIBuildTarget)' != ''">$(CIBuildTarget)</TargetFrameworks>
         <!-- iOSOnly: limit to iOS only for CI builds -->
-        <TargetFrameworks Condition="'$(CIBuildTarget)' == '' AND '$(IOSOnly)' == 'true'">net10.0-ios</TargetFrameworks>
+        <TargetFrameworks Condition="'$(IOSOnly)' == 'true'">net10.0-ios</TargetFrameworks>
         <!-- AndroidOnly: limit to Android only for CI builds -->
-        <TargetFrameworks Condition="'$(CIBuildTarget)' == '' AND '$(AndroidOnly)' == 'true'">net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="'$(AndroidOnly)' == 'true'">net10.0-android</TargetFrameworks>
         <!-- Default: all platforms (when neither IOSOnly nor AndroidOnly is set) -->
-        <TargetFrameworks Condition="'$(CIBuildTarget)' == '' AND '$(IOSOnly)' != 'true' AND '$(AndroidOnly)' != 'true'">net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
-        <TargetFrameworks Condition="'$(CIBuildTarget)' == '' AND $([MSBuild]::IsOSPlatform('windows')) AND '$(IOSOnly)' != 'true' AND '$(AndroidOnly)' != 'true'">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="'$(IOSOnly)' != 'true' AND '$(AndroidOnly)' != 'true'">net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) AND '$(IOSOnly)' != 'true' AND '$(AndroidOnly)' != 'true'">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 
         <!-- Note for MacCatalyst:
             The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
