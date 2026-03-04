@@ -88,10 +88,14 @@ jobs:
 
       - name: Install .NET workloads
         run: |
-          echo "Clearing existing workload manifests to avoid conflicts..."
-          rm -rf ~/.dotnet/sdk-manifests/*
           echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
-          dotnet workload install maui-ios --version 9.0.100 --skip-sign-check
+          cat > rollback.json << 'EOF'
+          {
+            "microsoft.net.sdk.ios": "18.0.9617/9.0.100",
+            "microsoft.net.sdk.maui": "9.0.0/9.0.100"
+          }
+          EOF
+          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
           echo "Verifying installed workloads..."
           dotnet workload list
           echo "Checking iOS SDK version..."
@@ -146,10 +150,14 @@ jobs:
 
       - name: Install .NET workloads
         run: |
-          echo "Clearing existing workload manifests to avoid conflicts..."
-          rm -rf ~/.dotnet/sdk-manifests/*
           echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
-          dotnet workload install maui-ios --version 9.0.100 --skip-sign-check
+          cat > rollback.json << 'EOF'
+          {
+            "microsoft.net.sdk.ios": "18.0.9617/9.0.100",
+            "microsoft.net.sdk.maui": "9.0.0/9.0.100"
+          }
+          EOF
+          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
 
       - name: Restore dependencies
         run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:CIBuildTarget=net9.0-ios
