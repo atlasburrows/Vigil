@@ -88,6 +88,8 @@ jobs:
 
       - name: Install .NET workloads
         run: |
+          echo "Clearing existing workload manifests to avoid conflicts..."
+          rm -rf ~/.dotnet/sdk-manifests/*
           echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
           dotnet workload install maui-ios --version 9.0.100 --skip-sign-check
           echo "Verifying installed workloads..."
@@ -144,6 +146,8 @@ jobs:
 
       - name: Install .NET workloads
         run: |
+          echo "Clearing existing workload manifests to avoid conflicts..."
+          rm -rf ~/.dotnet/sdk-manifests/*
           echo "Installing .NET 9 MAUI workloads for Xcode 16.2 compatibility..."
           dotnet workload install maui-ios --version 9.0.100 --skip-sign-check
 
