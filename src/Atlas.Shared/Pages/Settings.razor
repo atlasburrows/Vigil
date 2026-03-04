@@ -269,7 +269,7 @@
 
             <MudStack Spacing="2">
                 <MudText Style="color: #8b949e; font-size: 0.9rem;">Select vault mode:</MudText>
-                <MudRadioGroup T="string" SelectedOption="@_selectedVaultMode" SelectedOptionChanged="@UpdateSelectedVaultMode">
+                <MudRadioGroup T="string" @bind-SelectedOption="_selectedVaultMode">
                     <MudRadio T="string" Option="@("locked")" Color="Color.Primary">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" />
@@ -681,11 +681,6 @@
         _editingCredentialName = credentialName;
         _selectedVaultMode = _credentialModes.ContainsKey(credentialId) ? _credentialModes[credentialId] : "locked";
         _vaultModeDialogVisible = true;
-    }
-
-    private void UpdateSelectedVaultMode(string newMode)
-    {
-        _selectedVaultMode = newMode;
     }
 
     private async Task SaveVaultMode()

@@ -99,16 +99,16 @@ jobs:
           ls -la ~/.dotnet/packs/Microsoft.iOS.Sdk*/
 
       - name: Restore dependencies
-        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:IOSOnly=true
+        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:CIBuildTarget=net9.0-ios
 
       - name: Build iOS (Compile Only)
         run: |
           echo "=== Starting iOS Compile Check ==="
           dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
-            -f net10.0-ios \
+            -f net9.0-ios \
             -c Debug \
             -r iossimulator-arm64 \
-            /p:IOSOnly=true \
+            /p:CIBuildTarget=net9.0-ios \
             /p:BuildIpa=false \
             /p:RunAOTCompilation=false \
             --verbosity normal
@@ -153,7 +153,7 @@ jobs:
           dotnet workload install maui-ios --version 9.0.100 --skip-sign-check
 
       - name: Restore dependencies
-        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:IOSOnly=true
+        run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:CIBuildTarget=net9.0-ios
 
       - name: Setup Code Signing with Apple API
         env:
@@ -203,9 +203,9 @@ jobs:
           fi
           
           dotnet build src/Atlas.MAUI/Atlas.MAUI.csproj \
-            -f net10.0-ios \
+            -f net9.0-ios \
             -c Release \
-            /p:IOSOnly=true \
+            /p:CIBuildTarget=net9.0-ios \
             /p:RuntimeIdentifier=ios-arm64 \
             /p:CodesignKey="iPhone Distribution" \
             /p:CodesignProvision="Vigil App Store"
@@ -215,7 +215,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-build-log
-          path: src/Atlas.MAUI/bin/Release/net10.0-ios/
+          path: src/Atlas.MAUI/bin/Release/net9.0-ios/
           retention-days: 7
 
       - name: Summary

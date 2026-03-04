@@ -4,6 +4,7 @@
 @using Dapper
 @using Microsoft.Extensions.Configuration
 @using System.Text.Json
+@using MudBlazor
 @inject IDbConnectionFactory DbFactory
 @inject NavigationManager Nav
 @inject IConfiguration Configuration
@@ -666,7 +667,7 @@
                 await DetectOpenClaw();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Handle error
         }
@@ -687,7 +688,7 @@
                 await DetectOpenClaw();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Handle error
         }
@@ -708,9 +709,9 @@
             _configPreviewUser = GenerateUserMd();
             _configPreviewHeartbeat = GenerateHeartbeatMd();
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            _applyConfigError = $"Error generating previews: {ex.Message}";
+            _applyConfigError = $"Error generating previews: {e.Message}";
         }
         finally
         {
@@ -764,11 +765,11 @@
         }
     }
 
-    private void NextStep()
+    private async Task NextStep()
     {
         if (_step == 5) // Before going to config generation, generate previews
         {
-            GenerateConfigPreviews();
+            await GenerateConfigPreviews();
         }
         _step++;
     }
