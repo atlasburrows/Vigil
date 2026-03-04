@@ -32,14 +32,9 @@ jobs:
           brew install jq
           # Install compatible iOS workload for Xcode 16.2
           # .NET 10's iOS SDK 26.0 requires Xcode 26.0 which doesn't exist
-          # Use rollback file to pin to iOS SDK 18.x which supports Xcode 16.x
-          cat > rollback.json << 'EOF'
-          {
-            "microsoft.net.sdk.ios": "18.0.9617/10.0.100",
-            "microsoft.net.sdk.maui": "10.0.100/10.0.100"
-          }
-          EOF
-          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
+          # Use .NET 9 iOS SDK (17.5.8030) which supports Xcode 16.x
+          dotnet workload install ios --version 9.0.100 --skip-sign-check
+          dotnet workload install maui --skip-sign-check
 
       - name: Create Certificate Signing Request
         id: create_csr
@@ -98,14 +93,9 @@ jobs:
       - name: Install .NET workloads
         run: |
           echo "Installing .NET MAUI workloads..."
-          # Use rollback file to pin iOS SDK to version compatible with Xcode 16.2
-          cat > rollback.json << 'EOF'
-          {
-            "microsoft.net.sdk.ios": "18.0.9617/10.0.100",
-            "microsoft.net.sdk.maui": "10.0.100/10.0.100"
-          }
-          EOF
-          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
+          # Use .NET 9 iOS SDK which supports Xcode 16.x
+          dotnet workload install ios --version 9.0.100 --skip-sign-check
+          dotnet workload install maui --skip-sign-check
           echo "Verifying installed workloads..."
           dotnet workload list
           echo "Checking iOS SDK version..."
@@ -160,14 +150,9 @@ jobs:
 
       - name: Install MAUI workload
         run: |
-          # Use rollback file to pin iOS SDK to version compatible with Xcode 16.2
-          cat > rollback.json << 'EOF'
-          {
-            "microsoft.net.sdk.ios": "18.0.9617/10.0.100",
-            "microsoft.net.sdk.maui": "10.0.100/10.0.100"
-          }
-          EOF
-          dotnet workload install ios maui --from-rollback-file rollback.json --skip-sign-check
+          # Use .NET 9 iOS SDK which supports Xcode 16.x
+          dotnet workload install ios --version 9.0.100 --skip-sign-check
+          dotnet workload install maui --skip-sign-check
 
       - name: Restore dependencies
         run: dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:IOSOnly=true
