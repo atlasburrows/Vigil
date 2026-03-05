@@ -14,6 +14,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException("Connection string cannot be null or empty", nameof(connectionString));
+        
         // Detect if SQLite or SQL Server based on connection string
         bool isSqlite = connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
                         && !connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);

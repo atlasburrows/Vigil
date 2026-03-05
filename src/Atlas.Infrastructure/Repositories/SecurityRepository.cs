@@ -31,6 +31,7 @@ public class SecurityRepository(IDbConnectionFactory connectionFactory) : ISecur
             request.Description,
             request.Urgency,
             request.CredentialId,
+            request.CredentialGroupId,
             request.Category,
             request.ExpiresAt
         }, commandType: CommandType.StoredProcedure);
@@ -88,6 +89,7 @@ public class SecurityRepository(IDbConnectionFactory connectionFactory) : ISecur
         ResolvedBy = r.ResolvedBy,
         Urgency = r.Urgency,
         CredentialId = r.CredentialId,
+        CredentialGroupId = r.CredentialGroupId,
         Category = r.Category,
         ExpiresAt = r.ExpiresAt
     };
@@ -112,6 +114,7 @@ public class SecurityRepository(IDbConnectionFactory connectionFactory) : ISecur
         public string? ResolvedBy { get; set; }
         public string? Urgency { get; set; }
         public Guid? CredentialId { get; set; }
+        public Guid? CredentialGroupId { get; set; }
         public string? Category { get; set; }
         public DateTime? ExpiresAt { get; set; }
     }

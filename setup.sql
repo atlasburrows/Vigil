@@ -95,6 +95,7 @@ BEGIN
         ResolvedBy NVARCHAR(200),
         Urgency NVARCHAR(20),
         CredentialId UNIQUEIDENTIFIER,
+        CredentialGroupId UNIQUEIDENTIFIER, -- NEW: for group-level requests
         Category NVARCHAR(50),
         ExpiresAt DATETIME2
     );
@@ -417,13 +418,14 @@ CREATE OR ALTER PROCEDURE sp_PermissionRequests_Create
     @Description NVARCHAR(500) = NULL,
     @Urgency NVARCHAR(20) = NULL,
     @CredentialId UNIQUEIDENTIFIER = NULL,
+    @CredentialGroupId UNIQUEIDENTIFIER = NULL,
     @Category NVARCHAR(50) = NULL,
     @ExpiresAt DATETIME2 = NULL
 AS
 BEGIN
     DECLARE @Id UNIQUEIDENTIFIER = NEWID();
-    INSERT INTO PermissionRequests (Id, RequestType, Description, Status, RequestedAt, Urgency, CredentialId, Category, ExpiresAt)
-    VALUES (@Id, @RequestType, @Description, 'Pending', GETUTCDATE(), @Urgency, @CredentialId, @Category, @ExpiresAt);
+    INSERT INTO PermissionRequests (Id, RequestType, Description, Status, RequestedAt, Urgency, CredentialId, CredentialGroupId, Category, ExpiresAt)
+    VALUES (@Id, @RequestType, @Description, 'Pending', GETUTCDATE(), @Urgency, @CredentialId, @CredentialGroupId, @Category, @ExpiresAt);
     SELECT @Id AS Id;
 END
 GO
@@ -431,7 +433,7 @@ GO
 CREATE OR ALTER PROCEDURE sp_PermissionRequests_GetAll
 AS
 BEGIN
-    SELECT Id, RequestType, Description, Status, RequestedAt, ResolvedAt, ResolvedBy, Urgency, CredentialId, Category, ExpiresAt
+    SELECT Id, RequestType, Description, Status, RequestedAt, ResolvedAt, ResolvedBy, Urgency, CredentialId, CredentialGroupId, Category, ExpiresAt
     FROM PermissionRequests ORDER BY RequestedAt DESC;
 END
 GO
@@ -439,7 +441,7 @@ GO
 CREATE OR ALTER PROCEDURE sp_PermissionRequests_GetPending
 AS
 BEGIN
-    SELECT Id, RequestType, Description, Status, RequestedAt, ResolvedAt, ResolvedBy, Urgency, CredentialId, Category, ExpiresAt
+    SELECT Id, RequestType, Description, Status, RequestedAt, ResolvedAt, ResolvedBy, Urgency, CredentialId, CredentialGroupId, Category, ExpiresAt
     FROM PermissionRequests WHERE Status = 'Pending' ORDER BY RequestedAt DESC;
 END
 GO

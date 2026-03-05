@@ -13,6 +13,7 @@ public class PermissionRequest : BaseEntity
     public string? ResolvedBy { get; set; }
     public string? Urgency { get; set; }
     public Guid? CredentialId { get; set; }
+    public Guid? CredentialGroupId { get; set; } // For group-level requests
     public string? Category { get; set; }
     public DateTime? ExpiresAt { get; set; }
 }

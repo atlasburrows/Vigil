@@ -8,8 +8,9 @@ workflows:
         DOTNET_VERSION: "10.0.x"
         DOTNET_PATH: "$CM_BUILD_DIR/dotnet"
         DOTNET: "$CM_BUILD_DIR/dotnet/dotnet"
-        # iOS Build settings
-        IOS_ONLY: "true"
+        # iOS Build settings - must match property name in csproj (IOSOnly not IOS_ONLY)
+        IOSOnly: "true"
+        MauiVersion: "10.0.21"
         BUILD_CONFIGURATION: "Release"
       xcode: 16.2
       ios_signing:
@@ -38,7 +39,8 @@ workflows:
       - name: Restore dependencies
         script: |
           export PATH="$DOTNET_PATH:$PATH"
-          dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
+          echo "Restoring with IOSOnly=true..."
+          dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:IOSOnly=true
       
       - name: Build iOS (Simulator - Debug)
         script: |
@@ -99,6 +101,9 @@ workflows:
         DOTNET_VERSION: "10.0.x"
         DOTNET_PATH: "$CM_BUILD_DIR/dotnet"
         DOTNET: "$CM_BUILD_DIR/dotnet/dotnet"
+        # iOS Build settings - must match property name in csproj (IOSOnly not IOS_ONLY)
+        IOSOnly: "true"
+        MauiVersion: "10.0.21"
       xcode: 16.2
     scripts:
       - name: Install .NET SDK
@@ -118,7 +123,8 @@ workflows:
       - name: Restore dependencies
         script: |
           export PATH="$DOTNET_PATH:$PATH"
-          dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj
+          echo "Restoring with IOSOnly=true..."
+          dotnet restore src/Atlas.MAUI/Atlas.MAUI.csproj -p:IOSOnly=true
       
       - name: Build iOS Simulator
         script: |
